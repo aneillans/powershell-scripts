@@ -1,4 +1,4 @@
-﻿<#
+<#
     Modified version of ManagedDevices_Hardware_Get.ps1 from 
     https://github.com/microsoftgraph/powershell-intune-samples
 #>
@@ -282,6 +282,8 @@ $global:authToken = Get-AuthToken -User $User
 
 #endregion
 
+Connect-AzureAD
+
 ####################################################
 
 $ExportPath = Read-Host -Prompt "Please specify a path to export Managed Devices hardware data to e.g. C:\IntuneOutput"
@@ -318,6 +320,11 @@ $usersInDepartment = @()
 if ($department)
 {
     $usersInDepartment = (Get-AzureADUser -Filter "startswith(department, '$department')" | Select -ExpandProperty UserPrincipalName)
+
+    Write-Host
+    Write-Host "The following users will be checked for devices"
+    Write-Host
+    Write-Host $usersInDepartment
 }
 else
 {
