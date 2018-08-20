@@ -305,7 +305,7 @@ if($Devices){
 
     Write-Verbose "Checking device: $($Device.deviceName)" 
 
-    $DeviceNoHardware = $Device | select managedDeviceOwnerType, deviceType, phoneNumber, userPrincipalName
+    $DeviceNoHardware = $Device | select managedDeviceOwnerType, deviceType, phoneNumber, userPrincipalName, serialNumber, managementState, managedDeviceName, deviceName
 
         $Object = New-Object System.Object
 
@@ -315,9 +315,15 @@ if($Devices){
 
             }
 
-        if ($Object.managedDeviceOwnerType -eq 'company' -and ($Object.deviceType -eq 'iPhone'))
+        if ($Object.managedDeviceOwnerType -eq 'company' -and ($Object.deviceType -eq 'iPhone') -and ($Object.managementState -eq 'managed'))
         {    
 
+	   if ($Object.phoneNumber -eq '')
+	   {
+		Write-Host "No phone number recorded in Intune for Device Serial $($Object.serialNumber) UPN $($Object.userPrincipalName) ManagedDeviceName $($Object.managedDeviceName) DeviceName $($Object.deviceName)" -ForegroundColor Red
+           }
+           else
+           {
             $upn = $Object.userPrincipalName
             Write-Verbose "Searching for UPN $($upn)"
 
@@ -340,7 +346,7 @@ if($Devices){
                 Write-Host "Unknown user for phone object"
 		$UnknownOwners += $Object
             }
-            
+           }
         }
     }
 
@@ -350,7 +356,7 @@ if($Devices){
     Write-Host "**************"
 
     Write-Host -ForegroundColor Yellow "Unknown owners for the following entities"
-    $UnknownOwners | Select phoneNumber | Write-Host
+    $UnknownOwners | Select phoneNumber,serialNumber, managementState, deviceName | Write-Host
 }
 
 else {
