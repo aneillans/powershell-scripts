@@ -297,13 +297,13 @@ $Devices = Get-ManagedDevices
 if($Devices){
 
     $Results = @()
+    $UnknownOwners = @()
 
     foreach($Device in $Devices){
 
     $DeviceID = $Device.id
 
-    Write-Host "Checking device:" $Device.deviceName -ForegroundColor Yellow
-    Write-Host
+    Write-Verbose "Checking device: $($Device.deviceName)" 
 
     $DeviceNoHardware = $Device | select managedDeviceOwnerType, deviceType, phoneNumber, userPrincipalName
 
@@ -317,14 +317,17 @@ if($Devices){
 
         if ($Object.managedDeviceOwnerType -eq 'company' -and ($Object.deviceType -eq 'iPhone'))
         {    
-            $Results += $Object
-            $upn = $Object.userPrincipalName
 
+            $upn = $Object.userPrincipalName
+            Write-Verbose "Searching for UPN $($upn)"
+
+            if ($upn) {
             $user = Get-ADUser -filter { userPrincipalName -eq $upn } -Properties mobilePhone
             if ($user)
             {
                 if ($user.MobilePhone -ne $Object.phoneNumber)
                 {
+           	    $Results += $Object
                     Write-Host "Updating $($user.SAMAccountName) mobile number to $($Object.phoneNumber)"
 
                     if ($WhatIf -eq $false)
@@ -333,12 +336,21 @@ if($Devices){
                     }
                 }
             }
+	    } else {
+                Write-Host "Unknown user for phone object"
+		$UnknownOwners += $Object
+            }
             
         }
     }
 
-    $Results
+    Write-Host -ForegroundColor Yellow "Updated $($Results.Length) entities"
 
+
+    Write-Host "**************"
+
+    Write-Host -ForegroundColor Yellow "Unknown owners for the following entities"
+    $UnknownOwners | Select phoneNumber | Write-Host
 }
 
 else {
